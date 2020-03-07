@@ -9,6 +9,7 @@ pub const SERVERDATA_AUTH_RESPONSE: i32 = 2;
 pub const SERVERDATA_EXECCOMMAND: i32 = 2;
 pub const SERVERDATA_RESPONSE_VALUE: i32 = 0;
 
+/// A packet as received per the Rcon protocol
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RconPacket {
     id: i32,
@@ -60,6 +61,9 @@ impl RconPacket {
     }
 }
 
+/// An rcon client, implemented accordint to the rcon specification.
+///
+/// This client has some minor squad specifics.
 pub struct RconClient {
     next_id: i32,
     password: String,
@@ -67,6 +71,7 @@ pub struct RconClient {
 }
 
 impl RconClient {
+    /// Connect to, and authenticate with, an rcon server
     pub fn connect<A: ToSocketAddrs, S: Into<String>>(
         addr: A,
         password: S,
@@ -80,6 +85,9 @@ impl RconClient {
         Ok(rcon_client)
     }
 
+    /// Authenticate with the rcon server.
+    ///
+    /// This is automatically called by `RconClient::connect`
     pub fn authenticate(&mut self) -> Result<(), Error> {
         let authentication_packet =
             RconPacket::new(self.get_next_id(), SERVERDATA_AUTH, self.password());
@@ -101,11 +109,13 @@ impl RconClient {
         Ok(())
     }
 
+    /// Send an rcon packet to the server
     pub fn send_packet(&mut self, packet: &RconPacket) -> Result<(), Error> {
         self.stream.write_all(&packet.encode()?)?;
         Ok(())
     }
 
+    /// Receive an rcon packet from the server
     pub fn recv_packet(&mut self) -> Result<RconPacket, Error> {
         let size = self.stream.read_i32::<LittleEndian>()?;
         let id = self.stream.read_i32::<LittleEndian>()?;
@@ -124,21 +134,25 @@ impl RconClient {
         Ok(packet)
     }
 
+    /// Send an rcon packet and wait for the response
     pub fn send_and_get_response(&mut self, packet: &RconPacket) -> Result<RconPacket, Error> {
         self.send_packet(packet)?;
         self.recv_packet()
     }
 
+    /// Get the next id for an rcon packet to send
     pub fn get_next_id(&mut self) -> i32 {
         let next_id = self.next_id;
         self.next_id += 1;
         next_id
     }
 
+    /// The password used to initiate this rcon connection
     pub fn password(&self) -> &str {
         &self.password
     }
 
+    /// Execute an rcon command, and return the entire response from the server
     pub fn exec_command<S: Into<String>>(&mut self, command: S) -> Result<String, Error> {
         let mut body_parts: Vec<String> = Vec::new();
 

@@ -20,5 +20,5 @@ name = "squad_rcon"
 path = "lib/lib.rs"
 
 [[bin]]
-name = "squad_rcon_test"
+name = "squad-rcon"
 path = "src/main.rs"
