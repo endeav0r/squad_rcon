@@ -9,11 +9,11 @@ use std::net::ToSocketAddrs;
 lazy_static! {
     static ref PLAYER_REGEX: Regex =
         Regex::new(r"ID: (\d*) \| SteamID: (\d*) \| Name: (.*) \| Team ID: (\d) \| Squad ID: (.*)")
-            .unwrap();
+            .expect("PLAYER_REGEX");
     static ref SQUAD_REGEX: Regex =
-        Regex::new(r"ID: (\d*) \| Name: (.*) \| Size: (\d) \| Locked: (.*)").unwrap();
-    static ref TEAM_REGEX: Regex = Regex::new(r"Team ID: (\d*) \((.*)\)").unwrap();
-    static ref MAPS_REGEX: Regex = Regex::new(r"Current map is (.*), Next map is (.*)").unwrap();
+        Regex::new(r"ID: (\d*) \| Name: (.*) \| Size: (\d) \| Locked: (.*)").expect("SQUAD_REGEX");
+    static ref TEAM_REGEX: Regex = Regex::new(r"Team ID: (\d*) \((.*)\)").expect("TEAM_REGEX");
+    static ref MAPS_REGEX: Regex = Regex::new(r"Current map is (.*), Next map is (.*)").expect("MAPS_REGEX");
 }
 
 /// A squad-specific rcon connection
@@ -65,13 +65,13 @@ impl SquadRcon {
                 .captures(&line)
                 .ok_or(Error::SquadParsingError)?;
 
-            let team_id = captures.get(4).unwrap().as_str().parse().unwrap_or(0);
-            let squad_id = captures.get(5).unwrap().as_str().parse().ok();
+            let team_id = captures.get(4).expect("players get 4").as_str().parse().unwrap_or(0);
+            let squad_id = captures.get(5).expect("players get 5").as_str().parse().ok();
 
             let player = Player::new(
-                captures.get(1).unwrap().as_str().parse()?,
-                captures.get(2).unwrap().as_str().to_string(),
-                captures.get(3).unwrap().as_str().to_string(),
+                captures.get(1).expect("players get 1").as_str().parse()?,
+                captures.get(2).expect("players get 2").as_str().to_string(),
+                captures.get(3).expect("players get 3").as_str().to_string(),
                 team_id,
                 squad_id,
             );
@@ -103,17 +103,17 @@ impl SquadRcon {
 
         for line in lines {
             if let Some(captures) = TEAM_REGEX.captures(&line) {
-                let id = captures.get(1).unwrap().as_str().parse().unwrap_or(0);
-                let name = captures.get(2).unwrap().as_str().to_string();
+                let id = captures.get(1).expect("squads team get 1").as_str().parse().unwrap_or(0);
+                let name = captures.get(2).expect("squads team get 2").as_str().to_string();
 
                 current_team = id;
                 let team = Team::new(id, name);
                 teams.push(team);
             } else if let Some(captures) = SQUAD_REGEX.captures(&line) {
-                let id = captures.get(1).unwrap().as_str().parse().unwrap_or(0);
-                let name = captures.get(2).unwrap().as_str().to_string();
-                let size = captures.get(3).unwrap().as_str().parse().unwrap_or(0);
-                let locked = captures.get(4).unwrap().as_str() == "True";
+                let id = captures.get(1).expect("squads get 1").as_str().parse().unwrap_or(0);
+                let name = captures.get(2).expect("squads get 2").as_str().to_string();
+                let size = captures.get(3).expect("squads get 3").as_str().parse().unwrap_or(0);
+                let locked = captures.get(4).expect("squads get 4").as_str() == "True";
                 let squad = Squad::new(id, name, size, current_team, locked);
 
                 squads.push(squad);
@@ -134,6 +134,16 @@ impl SquadRcon {
             .into_iter()
             .map(|s| s.to_string())
             .collect::<Vec<String>>())
+    }
+
+    /// End the current match
+    pub fn end_match(&mut self) -> Result<String, Error> {
+        self.raw_command("AdminEndMatch")
+    }
+
+    /// Send a message to admin chat in game
+    pub fn chat_to_admin<S: AsRef<str>>(&mut self, message: S) -> Result<String, Error> {
+        self.raw_command(format!("ChatToAdmin {}", message.as_ref()))
     }
 
     /// Change the map currently running on the squad server.
@@ -248,8 +258,8 @@ impl SquadRcon {
             .ok_or(Error::SquadParsingError)?;
 
         Ok((
-            captures.get(1).unwrap().as_str().to_string(),
-            captures.get(2).unwrap().as_str().to_string(),
+            captures.get(1).expect("maps 1").as_str().to_string(),
+            captures.get(2).expect("maps 2").as_str().to_string(),
         ))
     }
 }
