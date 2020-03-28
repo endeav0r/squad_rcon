@@ -115,6 +115,16 @@ impl RconClient {
         Ok(())
     }
 
+    /// Returns true if there is data pending on the socket
+    pub fn data_pending(&mut self) -> Result<bool, Error> {
+        let mut temp = vec![0u8; 1];
+        if self.stream.peek(&mut temp)? > 0 {
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
     /// Receive an rcon packet from the server
     pub fn recv_packet(&mut self) -> Result<RconPacket, Error> {
         let size = self.stream.read_i32::<LittleEndian>()?;

@@ -4,9 +4,9 @@ mod squad;
 mod squad_rcon;
 mod team;
 
+pub use crate::squad_rcon::SquadRcon;
 pub use player::Player;
 pub use squad::Squad;
-pub use squad_rcon::SquadRcon;
 pub use team::Team;
 
 #[derive(Debug)]

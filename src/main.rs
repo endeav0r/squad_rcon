@@ -32,6 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .takes_value(true)
                 .env("SQUAD_RCON_PASS"),
         )
+        .subcommand(SubCommand::with_name("monitor").about("Print incoming messages from server"))
         .subcommand(SubCommand::with_name("players").about("List the players on the server"))
         .subcommand(SubCommand::with_name("teams").about("List the teams on the server"))
         .subcommand(SubCommand::with_name("squads").about("List the squads on the server"))
@@ -184,6 +185,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let duration = matches.value_of("duration").unwrap();
         let reason = matches.value_of("reason").unwrap();
         println!("{}", squad_rcon.ban(name, duration, reason)?);
+    } else if let Some(_) = matches.subcommand_matches("monitor") {
+        loop {
+            let packet = squad_rcon.rcon_client_mut().recv_packet()?;
+            println!("{}, {}, {}", packet.id(), packet.type_(), packet.body());
+        }
     } else {
         println!("No command specified. Try --help");
     }
