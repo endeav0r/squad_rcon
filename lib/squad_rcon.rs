@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::net::ToSocketAddrs;
 
-// pub const SERVERDATA_CHAT: i32 = 1;
+pub const SERVERDATA_CHAT: i32 = 1;
 
 lazy_static! {
     static ref PLAYER_REGEX: Regex =

@@ -4,7 +4,7 @@ mod squad;
 mod squad_rcon;
 mod team;
 
-pub use crate::squad_rcon::SquadRcon;
+pub use crate::squad_rcon::{SERVERDATA_CHAT, SquadRcon};
 pub use player::Player;
 pub use squad::Squad;
 pub use team::Team;
