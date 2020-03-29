@@ -187,8 +187,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{}", squad_rcon.ban(name, duration, reason)?);
     } else if let Some(_) = matches.subcommand_matches("monitor") {
         loop {
-            let packet = squad_rcon.rcon_client_mut().recv_packet()?;
-            println!("{}, {}, {}", packet.id(), packet.type_(), packet.body());
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            squad_rcon.maps()?;
+            for chat in squad_rcon.take_chat_log() {
+                println!("{:?}", chat);
+            }
         }
     } else {
         println!("No command specified. Try --help");

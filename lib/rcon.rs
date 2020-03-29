@@ -77,7 +77,7 @@ impl RconClient {
         password: S,
     ) -> Result<RconClient, Error> {
         let mut rcon_client = RconClient {
-            next_id: 0,
+            next_id: 10,
             password: password.into(),
             stream: TcpStream::connect(addr)?,
         };
@@ -115,27 +115,30 @@ impl RconClient {
         Ok(())
     }
 
-    /// Returns true if there is data pending on the socket
-    pub fn data_pending(&mut self) -> Result<bool, Error> {
-        let mut temp = vec![0u8; 1];
-        if self.stream.peek(&mut temp)? > 0 {
-            Ok(true)
-        } else {
-            Ok(false)
+    fn recv_buf(&mut self, buf_size: usize) -> Result<Vec<u8>, Error> {
+        let mut bytes = vec![0; buf_size];
+        let mut total_bytes_read = 0;
+        while total_bytes_read < buf_size {
+            let bytes_read = self.stream.read(&mut bytes[total_bytes_read..buf_size])?;
+            total_bytes_read += bytes_read;
         }
+        Ok(bytes)
+    }
+
+    fn recv_i32(&mut self) -> Result<i32, Error> {
+        use std::io::Cursor;
+        Ok(Cursor::new(self.recv_buf(4)?).read_i32::<LittleEndian>()?)
     }
 
     /// Receive an rcon packet from the server
     pub fn recv_packet(&mut self) -> Result<RconPacket, Error> {
-        let size = self.stream.read_i32::<LittleEndian>()?;
-        let id = self.stream.read_i32::<LittleEndian>()?;
-        let type_ = self.stream.read_i32::<LittleEndian>()?;
+        let size = self.recv_i32()?;
+        let id = self.recv_i32()?;
+        let type_ = self.recv_i32()?;
 
-        let mut body = vec![0u8; size as usize - 10];
-        self.stream.read_exact(&mut body)?;
+        let body = self.recv_buf(size as usize - 10)?;
 
-        let mut null_bytes = vec![0u8; 2];
-        self.stream.read_exact(&mut null_bytes)?;
+        let _null_bytes = self.recv_buf(2)?;
 
         let body = String::from_utf8(body)?;
 
@@ -154,6 +157,9 @@ impl RconClient {
     pub fn get_next_id(&mut self) -> i32 {
         let next_id = self.next_id;
         self.next_id += 1;
+        if self.next_id > 100000 {
+            self.next_id = 10;
+        }
         next_id
     }
 
@@ -190,5 +196,41 @@ impl RconClient {
         }
 
         Ok(body_parts.join(""))
+    }
+
+    /// Execute an rcon command, and return the entire response from the server,
+    /// as well as any other packets which were on the line (these are most
+    /// likely chat messages).
+    pub fn exec_command2<S: Into<String>>(
+        &mut self,
+        command: S,
+    ) -> Result<(String, Vec<RconPacket>), Error> {
+        let mut body_parts: Vec<String> = Vec::new();
+
+        let request_id = self.get_next_id();
+        let chk_id = self.get_next_id();
+
+        let request_packet = RconPacket::new(request_id, SERVERDATA_EXECCOMMAND, command.into());
+
+        // We just do this to make sure we've received all the data in the current packet
+        let check_packet = RconPacket::new(chk_id, SERVERDATA_EXECCOMMAND, "ListCommands");
+
+        self.send_packet(&request_packet)?;
+        self.send_packet(&check_packet)?;
+
+        let mut other_packets = Vec::new();
+
+        loop {
+            let response = self.recv_packet()?;
+            if response.id() == request_id {
+                body_parts.push(response.into_body());
+            } else if response.id() == chk_id {
+                break;
+            } else {
+                other_packets.push(response);
+            }
+        }
+
+        Ok((body_parts.join(""), other_packets))
     }
 }

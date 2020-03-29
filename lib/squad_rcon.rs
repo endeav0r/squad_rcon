@@ -1,5 +1,5 @@
 use crate::rcon::RconClient;
-use crate::{Error, Player, Squad, Team};
+use crate::{Chat, Error, Player, Squad, Team};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::net::ToSocketAddrs;
@@ -15,11 +15,14 @@ lazy_static! {
     static ref TEAM_REGEX: Regex = Regex::new(r"Team ID: (\d*) \((.*)\)").expect("TEAM_REGEX");
     static ref MAPS_REGEX: Regex =
         Regex::new(r"Current map is (.*), Next map is (.*)").expect("MAPS_REGEX");
+    static ref CHAT_REGEX: Regex =
+        Regex::new(r"\[(.*?)\] \[SteamID:(\d*)\] (.*?) : (.*)").expect("CHAT_REGEX");
 }
 
 /// A squad-specific rcon connection
 pub struct SquadRcon {
     rcon_client: RconClient,
+    chat_log: Vec<String>,
 }
 
 impl SquadRcon {
@@ -29,6 +32,7 @@ impl SquadRcon {
     ) -> Result<SquadRcon, Error> {
         Ok(SquadRcon {
             rcon_client: RconClient::connect(addr, password)?,
+            chat_log: Vec::new(),
         })
     }
 
@@ -37,11 +41,38 @@ impl SquadRcon {
         &mut self.rcon_client
     }
 
+    /// Take the current chat log. This resets the chat log.
+    pub fn take_chat_log(&mut self) -> Result<Vec<Chat>, Error> {
+        let chat_log = std::mem::replace(&mut self.chat_log, Vec::new());
+
+        let mut chats = Vec::new();
+        for line in chat_log {
+            let captures = CHAT_REGEX.captures(&line).ok_or(Error::SquadParsingError)?;
+
+            chats.push(Chat::new(
+                captures.get(1).unwrap().as_str().to_string(),
+                captures.get(2).unwrap().as_str().to_string(),
+                captures.get(3).unwrap().as_str().to_string(),
+                captures.get(4).unwrap().as_str().to_string(),
+            ));
+        }
+
+        Ok(chats)
+    }
+
     /// Execute a raw rcon command, and return the result.
     ///
     /// This is a convenience wrapper around `RconClient::exec_command`.
     pub fn raw_command<S: Into<String>>(&mut self, command: S) -> Result<String, Error> {
-        self.rcon_client.exec_command(command)
+        let (response, other_packets) = self.rcon_client.exec_command2(command)?;
+
+        for packet in other_packets {
+            if packet.type_() == SERVERDATA_CHAT {
+                self.chat_log.push(packet.body().to_string());
+            }
+        }
+
+        Ok(response)
     }
 
     /// Return all of the players on the squad server
