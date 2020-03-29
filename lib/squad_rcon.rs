@@ -36,6 +36,10 @@ impl SquadRcon {
         })
     }
 
+    pub fn reconnect(&mut self) -> Result<(), Error> {
+        self.rcon_client.reconnect()
+    }
+
     /// Get a mutable reference to the underlying rcon connection
     pub fn rcon_client_mut(&mut self) -> &mut RconClient {
         &mut self.rcon_client

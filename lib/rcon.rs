@@ -2,7 +2,7 @@ use crate::Error;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 
 pub const SERVERDATA_AUTH: i32 = 3;
 pub const SERVERDATA_AUTH_RESPONSE: i32 = 2;
@@ -68,6 +68,7 @@ pub struct RconClient {
     next_id: i32,
     password: String,
     stream: TcpStream,
+    addr: SocketAddr
 }
 
 impl RconClient {
@@ -76,13 +77,21 @@ impl RconClient {
         addr: A,
         password: S,
     ) -> Result<RconClient, Error> {
+        let addr: SocketAddr = addr.to_socket_addrs()?.next().unwrap();
         let mut rcon_client = RconClient {
             next_id: 10,
             password: password.into(),
-            stream: TcpStream::connect(addr)?,
+            stream: TcpStream::connect(&addr)?,
+            addr: addr
         };
         rcon_client.authenticate()?;
         Ok(rcon_client)
+    }
+
+    pub fn reconnect(&mut self) -> Result<(), Error> {
+        self.stream = TcpStream::connect(&self.addr)?;
+        self.authenticate()?;
+        Ok(())
     }
 
     /// Authenticate with the rcon server.
@@ -121,6 +130,9 @@ impl RconClient {
         while total_bytes_read < buf_size {
             let bytes_read = self.stream.read(&mut bytes[total_bytes_read..buf_size])?;
             println!("bytes_read: {}", bytes_read);
+            if bytes_read == 0 {
+                return Err(Error::Disconnected);
+            }
             total_bytes_read += bytes_read;
         }
         Ok(bytes)

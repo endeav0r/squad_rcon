@@ -14,6 +14,7 @@ pub use team::Team;
 #[derive(Debug)]
 pub enum Error {
     AuthenticationFailure,
+    Disconnected,
     EmptyPacketBody,
     FromUtf8Error(std::string::FromUtf8Error),
     IoError(std::io::Error),
@@ -26,6 +27,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Error::AuthenticationFailure => write!(f, "Authentication Failure"),
+            Error::Disconnected => write!(f, "Disconnected"),
             Error::EmptyPacketBody => write!(f, "Empty packet body"),
             Error::FromUtf8Error(from_utf8_error) => write!(f, "{}", from_utf8_error),
             Error::IoError(io_error) => write!(f, "{}", io_error),
