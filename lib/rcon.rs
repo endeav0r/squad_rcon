@@ -120,6 +120,7 @@ impl RconClient {
         let mut total_bytes_read = 0;
         while total_bytes_read < buf_size {
             let bytes_read = self.stream.read(&mut bytes[total_bytes_read..buf_size])?;
+            println!("bytes_read: {}", bytes_read);
             total_bytes_read += bytes_read;
         }
         Ok(bytes)
@@ -217,7 +218,7 @@ impl RconClient {
         let request_packet = RconPacket::new(request_id, SERVERDATA_EXECCOMMAND, command.into());
 
         // We just do this to make sure we've received all the data in the current packet
-        let check_packet = RconPacket::new(chk_id, SERVERDATA_EXECCOMMAND, "ListCommands");
+        let check_packet = RconPacket::new(chk_id, SERVERDATA_EXECCOMMAND, "ShowNextMap");
 
         self.send_packet(&request_packet)?;
         self.send_packet(&check_packet)?;
