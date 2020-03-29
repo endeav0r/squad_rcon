@@ -132,9 +132,11 @@ impl RconClient {
 
     /// Receive an rcon packet from the server
     pub fn recv_packet(&mut self) -> Result<RconPacket, Error> {
+        println!("Begin recv_packet");
         let size = self.recv_i32()?;
         let id = self.recv_i32()?;
         let type_ = self.recv_i32()?;
+        println!("size: 0x{:x}, id: 0x{:x}, type_: 0x{:x}", size, id, type_);
 
         let body = self.recv_buf(size as usize - 10)?;
 
@@ -143,6 +145,8 @@ impl RconClient {
         let body = String::from_utf8(body)?;
 
         let packet = RconPacket::new(id, type_, body);
+
+        println!("done with recv_packet");
 
         Ok(packet)
     }
