@@ -5,8 +5,8 @@ pub struct Player {
     id: usize,
     steam_id: String,
     name: String,
-    team: usize,
-    squad: Option<usize>,
+    team_id: usize,
+    squad_id: Option<usize>,
 }
 
 impl Player {
@@ -14,15 +14,15 @@ impl Player {
         id: usize,
         steam_id: String,
         name: String,
-        team: usize,
-        squad: Option<usize>,
+        team_id: usize,
+        squad_id: Option<usize>,
     ) -> Player {
         Player {
             id: id,
             steam_id: steam_id,
             name: name,
-            team: team,
-            squad: squad,
+            team_id: team_id,
+            squad_id: squad_id,
         }
     }
 
@@ -35,10 +35,10 @@ impl Player {
     pub fn name(&self) -> &str {
         &self.name
     }
-    pub fn team(&self) -> usize {
-        self.team.clone()
+    pub fn team_id(&self) -> usize {
+        self.team_id.clone()
     }
-    pub fn squad(&self) -> Option<usize> {
-        self.squad
+    pub fn squad_id(&self) -> Option<usize> {
+        self.squad_id
     }
 }

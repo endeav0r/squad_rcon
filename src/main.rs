@@ -134,9 +134,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "{} - {} - {} - {}",
                 player.name(),
                 player.steam_id(),
-                player.team(),
+                player.team_id(),
                 player
-                    .squad()
+                    .squad_id()
                     .map(|id| format!("{}", id))
                     .unwrap_or("N/A".to_string())
             );

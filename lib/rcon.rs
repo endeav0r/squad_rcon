@@ -68,7 +68,7 @@ pub struct RconClient {
     next_id: i32,
     password: String,
     stream: TcpStream,
-    addr: SocketAddr
+    addr: SocketAddr,
 }
 
 impl RconClient {
@@ -82,7 +82,7 @@ impl RconClient {
             next_id: 10,
             password: password.into(),
             stream: TcpStream::connect(&addr)?,
-            addr: addr
+            addr: addr,
         };
         rcon_client.authenticate()?;
         Ok(rcon_client)
@@ -129,7 +129,6 @@ impl RconClient {
         let mut total_bytes_read = 0;
         while total_bytes_read < buf_size {
             let bytes_read = self.stream.read(&mut bytes[total_bytes_read..buf_size])?;
-            println!("bytes_read: {}", bytes_read);
             if bytes_read == 0 {
                 return Err(Error::Disconnected);
             }
@@ -145,11 +144,9 @@ impl RconClient {
 
     /// Receive an rcon packet from the server
     pub fn recv_packet(&mut self) -> Result<RconPacket, Error> {
-        println!("Begin recv_packet");
         let size = self.recv_i32()?;
         let id = self.recv_i32()?;
         let type_ = self.recv_i32()?;
-        println!("size: 0x{:x}, id: 0x{:x}, type_: 0x{:x}", size, id, type_);
 
         let body = self.recv_buf(size as usize - 10)?;
 
@@ -158,8 +155,6 @@ impl RconClient {
         let body = String::from_utf8(body)?;
 
         let packet = RconPacket::new(id, type_, body);
-
-        println!("done with recv_packet");
 
         Ok(packet)
     }
@@ -186,34 +181,34 @@ impl RconClient {
     }
 
     /// Execute an rcon command, and return the entire response from the server
-    pub fn exec_command<S: Into<String>>(&mut self, command: S) -> Result<String, Error> {
-        let mut body_parts: Vec<String> = Vec::new();
+    // pub fn exec_command<S: Into<String>>(&mut self, command: S) -> Result<String, Error> {
+    //     let mut body_parts: Vec<String> = Vec::new();
 
-        let request_id = self.get_next_id();
-        let chk_id = self.get_next_id();
+    //     let request_id = self.get_next_id();
+    //     let chk_id = self.get_next_id();
 
-        let request_packet = RconPacket::new(request_id, SERVERDATA_EXECCOMMAND, command.into());
+    //     let request_packet = RconPacket::new(request_id, SERVERDATA_EXECCOMMAND, command.into());
 
-        // We just do this to make sure we've received all the data in the current packet
-        let check_packet = RconPacket::new(chk_id, SERVERDATA_EXECCOMMAND, "ListCommands");
+    //     // We just do this to make sure we've received all the data in the current packet
+    //     let check_packet = RconPacket::new(chk_id, SERVERDATA_EXECCOMMAND, "ListCommands");
 
-        self.send_packet(&request_packet)?;
-        self.send_packet(&check_packet)?;
+    //     self.send_packet(&request_packet)?;
+    //     self.send_packet(&check_packet)?;
 
-        loop {
-            let response = self.recv_packet()?;
+    //     loop {
+    //         let response = self.recv_packet()?;
 
-            if response.id() == request_id {
-                body_parts.push(response.into_body());
-            } else {
-                if response.id() == chk_id {
-                    break;
-                }
-            }
-        }
+    //         if response.id() == request_id {
+    //             body_parts.push(response.into_body());
+    //         } else {
+    //             if response.id() == chk_id {
+    //                 break;
+    //             }
+    //         }
+    //     }
 
-        Ok(body_parts.join(""))
-    }
+    //     Ok(body_parts.join(""))
+    // }
 
     /// Execute an rcon command, and return the entire response from the server,
     /// as well as any other packets which were on the line (these are most
