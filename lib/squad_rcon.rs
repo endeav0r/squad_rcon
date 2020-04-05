@@ -36,9 +36,8 @@ impl SquadRcon {
         })
     }
 
-    /// Get a mutable reference to the underlying rcon connection
-    pub fn rcon_client_mut(&mut self) -> &mut RconClient {
-        &mut self.rcon_client
+    pub fn reconnect(&mut self) -> Result<(), Error> {
+        self.rcon_client.reconnect()
     }
 
     /// Take the current chat log. This resets the chat log.
@@ -228,11 +227,7 @@ impl SquadRcon {
     }
 
     /// Disband a squad.
-    pub fn disband_squad<S: AsRef<str>>(
-        &mut self,
-        team_id: usize,
-        squad_id: usize,
-    ) -> Result<String, Error> {
+    pub fn disband_squad(&mut self, team_id: usize, squad_id: usize) -> Result<String, Error> {
         self.raw_command(format!("AdminDisbandSquad {} {}", team_id, squad_id))
     }
 
