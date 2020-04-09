@@ -134,10 +134,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "{} - {} - {} - {}",
                 player.name(),
                 player.steam_id(),
-                player.team_id(),
+                player
+                    .team_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or("N/A".to_string()),
                 player
                     .squad_id()
-                    .map(|id| format!("{}", id))
+                    .map(|id| id.to_string())
                     .unwrap_or("N/A".to_string())
             );
         }

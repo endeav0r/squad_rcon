@@ -8,7 +8,7 @@ pub const SERVERDATA_CHAT: i32 = 1;
 
 lazy_static! {
     static ref PLAYER_REGEX: Regex =
-        Regex::new(r"ID: (\d*) \| SteamID: (\d*) \| Name: (.*) \| Team ID: (\d) \| Squad ID: (.*)")
+        Regex::new(r"ID: (\d*) \| SteamID: (\d*) \| Name: (.*) \| Team ID: (.*) \| Squad ID: (.*)")
             .expect("PLAYER_REGEX");
     static ref SQUAD_REGEX: Regex =
         Regex::new(r"ID: (\d*) \| Name: (.*) \| Size: (\d) \| Locked: (.*)").expect("SQUAD_REGEX");
@@ -92,6 +92,8 @@ impl SquadRcon {
                 break;
             }
 
+            println!("{}", line);
+
             let captures = PLAYER_REGEX
                 .captures(&line)
                 .ok_or(Error::SquadParsingError)?;
@@ -101,7 +103,7 @@ impl SquadRcon {
                 .expect("players get 4")
                 .as_str()
                 .parse()
-                .unwrap_or(0);
+                .ok();
             let squad_id = captures
                 .get(5)
                 .expect("players get 5")
