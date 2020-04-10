@@ -92,8 +92,6 @@ impl SquadRcon {
                 break;
             }
 
-            println!("{}", line);
-
             let captures = PLAYER_REGEX
                 .captures(&line)
                 .ok_or(Error::SquadParsingError)?;
